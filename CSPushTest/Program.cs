@@ -2,6 +2,7 @@
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using CSPushClient;
 
 namespace CSPushTest
 {
@@ -12,37 +13,13 @@ namespace CSPushTest
             Console.WriteLine("connect");
 
             var ip = "127.0.0.1";
-            var port = 24356;
+            var port = 24356; // default port
 
-            var client = new TcpClient(ip, port);
-            var ns = client.GetStream();
-
-            try
+            var service = new PushService(ip, port);
+            var msg = "";
+            while ((msg = service.WaitForNotifycation()) != null)
             {
-                var buffer = new byte[1024];
-                int nbytes;
-
-                while ((nbytes =ns.Read(buffer, 0, buffer.Length)) > 0)
-                {
-                    if (buffer[0] == 1)
-                    {
-                        var msg = Encoding.UTF8.GetString(buffer, 1, nbytes - 1);
-                        Console.WriteLine(msg);
-                    }
-                    else
-                        Console.WriteLine(buffer[0]);
-                    Array.Clear(buffer, 0, buffer.Length);
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex);
-
-                try
-                {
-                    client.Close();
-                    ns.Dispose();
-                } catch { }
+                Console.WriteLine(msg);
             }
 
             Console.WriteLine("disconnected");

@@ -5,4 +5,10 @@
     <TargetFramework>netcoreapp3.0</TargetFramework>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Reference Include="CSPushClient">
+      <HintPath>..\CSPushClient\bin\Debug\netcoreapp3.0\CSPushClient.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
 </Project>
