@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Text;
-using System.Threading;
 
 namespace CSPushClient
 {
@@ -19,8 +17,6 @@ namespace CSPushClient
         string ip;
         int port;
 
-        bool readingStream = false;
-
         TcpClient client;
         NetworkStream ns;
 
@@ -33,8 +29,7 @@ namespace CSPushClient
 
         public string WaitForNotifycation()
         {
-            readingStream = true;
-            string msg;
+            string msg = null;
 
             try
             {
@@ -51,8 +46,6 @@ namespace CSPushClient
 
                     Array.Clear(buffer, 0, buffer.Length);
                 }
-
-                msg = null;
             }
             catch (Exception ex)
             {
@@ -60,7 +53,6 @@ namespace CSPushClient
                 msg = null;
             }
 
-            readingStream = false;
             return msg;
         }
 

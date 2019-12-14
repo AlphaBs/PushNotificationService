@@ -17,7 +17,7 @@ namespace PushServer
             var p = new PushServer();
             p.StartServer(new Setting()
             {
-                Ip = "127.0.0.1"
+                Ip = "0.0.0.0"
             });
 
             Console.WriteLine("Started");
@@ -80,6 +80,8 @@ namespace PushServer
         {
             Console.WriteLine("stopped");
             Console.ReadLine();
+
+            Environment.Exit(0);
         }
     }
 }

@@ -1,21 +1,23 @@
 ﻿using System;
-using System.Net;
-using System.Net.Sockets;
-using System.Text;
 using CSPushClient;
 
 namespace CSPushTest
 {
-    class Program
+    public class Program
     {
-        static void Main(string[] args)
+        public static void Main(string[] args)
         {
-            Console.WriteLine("connect");
+            Console.WriteLine("start");
 
-            var ip = "127.0.0.1";
+            //var ip = "127.0.0.1";
+            var ip = "52.231.69.144";
             var port = 24356; // default port
 
             var service = new PushService(ip, port);
+            service.Connect();
+
+            Console.WriteLine("connected");
+
             var msg = "";
             while ((msg = service.WaitForNotifycation()) != null)
             {

@@ -3,11 +3,14 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29326.143
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PushServer", "PushServer\PushServer.csproj", "{04851C2B-9123-4B1B-8435-9F6C07596CBB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PushServer", "PushServer\PushServer.csproj", "{04851C2B-9123-4B1B-8435-9F6C07596CBB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CSPushClient", "CSPushClient\CSPushClient.csproj", "{BCF103D1-9DE6-4B1A-84BE-CB942B72539E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CSPushClient", "CSPushClient\CSPushClient.csproj", "{BCF103D1-9DE6-4B1A-84BE-CB942B72539E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CSPushTest", "CSPushTest\CSPushTest.csproj", "{33A19160-9F3A-4A9C-87DF-C017C2D5C853}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CSPushTest", "CSPushTest\CSPushTest.csproj", "{33A19160-9F3A-4A9C-87DF-C017C2D5C853}"
+	ProjectSection(ProjectDependencies) = postProject
+		{BCF103D1-9DE6-4B1A-84BE-CB942B72539E} = {BCF103D1-9DE6-4B1A-84BE-CB942B72539E}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
