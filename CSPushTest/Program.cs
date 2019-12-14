@@ -21,6 +21,7 @@ namespace CSPushTest
             {
                 var buffer = new byte[1024];
                 int nbytes;
+
                 while ((nbytes =ns.Read(buffer, 0, buffer.Length)) > 0)
                 {
                     if (buffer[0] == 1)
@@ -28,7 +29,8 @@ namespace CSPushTest
                         var msg = Encoding.UTF8.GetString(buffer, 1, nbytes - 1);
                         Console.WriteLine(msg);
                     }
-
+                    else
+                        Console.WriteLine(buffer[0]);
                     Array.Clear(buffer, 0, buffer.Length);
                 }
             }

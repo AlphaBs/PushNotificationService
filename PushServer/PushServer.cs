@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
@@ -13,14 +14,17 @@ namespace PushServer
 
         TcpListener server;
         Thread acceptThread;
-        Thread clientThread;
+        Thread manageThread;
 
+        public bool Working { get; private set; }
         public List<PushClient> ClientList { get; set; }
 
         Queue<byte[]> messages;
 
         public void StartServer(Setting _setting)
         {
+            Working = true;
+
             this.setting = _setting;
 
             server = new TcpListener(IPAddress.Parse(setting.Ip), setting.Port);
@@ -29,8 +33,8 @@ namespace PushServer
             messages = new Queue<byte[]>();
             ClientList = new List<PushClient>();
 
-            clientThread = new Thread(manageClient);
-            clientThread.Start();
+            manageThread = new Thread(manageClient);
+            manageThread.Start();
 
             acceptThread = new Thread(acceptLooper);
             acceptThread.Start();
@@ -39,15 +43,32 @@ namespace PushServer
         // TCP 연결 수락
         void acceptLooper()
         {
-            while (true)
+            while (Working)
             {
-                var tcpClient = server.AcceptTcpClient();
-                var pushClient = new PushClient(tcpClient);
-                pushClient.SetStreamWriteTimeout(setting.StreamWriteTimeout);
+                try
+                {
+                    var tcpClient = server.AcceptTcpClient();
+                    var pushClient = new PushClient(tcpClient);
+                    pushClient.SetStreamWriteTimeout(setting.StreamWriteTimeout);
 
-                ClientList.Add(pushClient);
+                    lock (ClientList)
+                    {
+                        ClientList.Add(pushClient);
+                    }
 
-                log(pushClient.GetIp() + " connected");
+                    log(pushClient.GetIp() + " connected");
+                }
+                catch (SocketException ex)
+                {
+                    if (ex.SocketErrorCode == SocketError.Interrupted)
+                        return;
+
+                    log("acceptThread SocketException " + ex.SocketErrorCode.ToString() + " : " + ex.ToString());
+                }
+                catch(Exception ex)
+                {
+                    log("acceptThread Exception : " + ex.ToString());
+                }
             }
         }
 
@@ -57,61 +78,109 @@ namespace PushServer
             long pingInterval = TimeSpan.FromSeconds(setting.PingIntervalSecond).Ticks;
             long lastPingTime = DateTime.Now.Ticks;
 
-            List<PushClient> deadClients;
+            ConcurrentQueue<PushClient> deadClients = new ConcurrentQueue<PushClient>(); ;
 
-            while (true)
+            while (Working)
             {
                 byte[] msg = null;
                 if (messages.Count > 0)
                     msg = messages.Dequeue();
 
-                deadClients = new List<PushClient>(setting.DeadClientInitCapacity);
-
                 bool requirePing = (DateTime.Now.Ticks - lastPingTime > pingInterval);
 
-                foreach (var client in ClientList)
+                try
                 {
-                    try
+                    // Check Alive
+                    if (requirePing)
                     {
-                        // Check Alive
-                        if (requirePing)
+                        clientWorker((client) =>
                         {
                             if (!client.CheckAlive())
                             {
-                                deadClients.Add(client);
-                                continue;
+                                deadClients.Enqueue(client);
                             }
-                        }
-                        
-                        // Send Message
-                        if (msg != null)
+                        });
+
+                        lastPingTime = DateTime.Now.Ticks;
+                    }
+
+                    // Send Message
+                    if (msg != null)
+                    {
+                        clientWorker((client) =>
                         {
                             bool success = client.Send(DataType.Notifycation, msg);
 
                             if (success)
                                 log(client.GetIp() + " sent");
                             else
-                                deadClients.Add(client);
-                        }
+                                deadClients.Enqueue(client);
+                        });
                     }
-                    catch (Exception ex)
-                    {
-                        log(ex.ToString());
-                    }
+                }
+                catch (Exception ex)
+                {
+                    log(ex.ToString());
                 }
 
-                // have to find more efficient way
-                foreach (var deads in deadClients)
+                // Remove disconnected clients
+                while (deadClients.Count > 0)
                 {
-                    ClientList.Remove(deads);
-                    log(deads.GetIp() + " disconnected");
+                    PushClient deads;
+                    if (deadClients.TryDequeue(out deads))
+                    {
+                        ClientList.Remove(deads);
+                        log(deads.GetIp() + " disconnected");
+                    }
                 }
-                deadClients.Clear();
 
                 Thread.Sleep(setting.ManageThreadInterval);
+                //GC.Collect();
+            }
+        }
 
-                if (requirePing) // refresh LastPingTime
-                    lastPingTime = DateTime.Now.Ticks;
+        // 여러 스레드에서 일괄 작업
+        void clientWorker(Action<PushClient> work, bool forceWork = false)
+        {
+            int count = ClientList.Count;
+            int lastIndex = count - 1;
+
+            var threadCount = setting.ClientThreadCount;
+
+            if (count <= 0)
+                return;
+            else if (count < threadCount)
+                threadCount = count;
+
+            var threads = new Thread[threadCount];
+            for (int i = 0; i < threads.Length; i++)
+            {
+                var th = new Thread(new ThreadStart(delegate
+                {
+                    while (Working || forceWork)
+                    {
+                        PushClient client;
+
+                        lock (ClientList)
+                        {
+                            if (lastIndex < 0)
+                                break;
+
+                            client = ClientList[lastIndex];
+                            lastIndex--;
+                        }
+
+                        work(client);
+                    }
+                }));
+
+                th.Start();
+                threads[i] = th;
+            }
+
+            foreach (var th in threads)
+            {
+                th.Join();
             }
         }
 
@@ -124,8 +193,22 @@ namespace PushServer
 
         public void Stop()
         {
-            // TODO
-            throw new NotImplementedException();
+            Working = false;
+
+            server.Stop();
+            log("TcpListener closed");
+
+            acceptThread.Join();
+            log("acceptThread closed");
+
+            manageThread.Join();
+            log("manageThread closed");
+
+            clientWorker((client) =>
+            {
+                client.Close();
+            }, true);
+            log("All connection closed");
         }
 
         // 임시 로거

@@ -10,7 +10,7 @@ namespace PushServer
 {
     public enum DataType
     {
-        Test = 0xFF,
+        Ping = 0xFF,
         Notifycation = 1
     }
 
@@ -67,11 +67,12 @@ namespace PushServer
         {
             try
             {
-                return Send(DataType.Test, null);
+                return Send(DataType.Ping, null);
             }
             catch (Exception ex)
             {
                 if (ex is NullReferenceException ||
+                    ex is ObjectDisposedException ||
                     ex is IOException)
                     return false;
                 else
@@ -89,7 +90,7 @@ namespace PushServer
             ns.Dispose();
             ns = null;
 
-            client.Close();
+            client.Dispose();
             client = null;
         }
     }

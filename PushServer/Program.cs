@@ -4,6 +4,7 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Collections.Generic;
 using System.Text;
+using System.Diagnostics;
 
 namespace PushServer
 {
@@ -31,7 +32,13 @@ namespace PushServer
                 switch (msg)
                 {
                     case "/stop":
+                        Console.WriteLine("stopping server");
+                        p.Stop();
                         exit();
+                        break;
+
+                    case "/thread":
+                        threads();
                         break;
 
                     case "/list":
@@ -56,6 +63,16 @@ namespace PushServer
             foreach (var item in p.ClientList)
             {
                 Console.WriteLine(item.GetIp());
+            }
+        }
+
+        static void threads()
+        {
+            ProcessThreadCollection currentThreads = Process.GetCurrentProcess().Threads;
+
+            foreach (ProcessThread thread in currentThreads)
+            {
+                Console.WriteLine("{0}: {1}", thread.Id, thread.ThreadState);
             }
         }
 
