@@ -15,7 +15,7 @@ namespace PushServer
             Console.WriteLine("Starting Server");
 
             var p = new PushServer();
-            p.StartServer(new Setting()
+            p.Start(new Setting()
             {
                 Ip = "0.0.0.0"
             });
@@ -62,7 +62,7 @@ namespace PushServer
 
             foreach (var item in p.ClientList)
             {
-                Console.WriteLine(item.GetIp());
+                Console.WriteLine(item.Ip);
             }
         }
 

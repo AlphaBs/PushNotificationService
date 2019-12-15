@@ -9,8 +9,8 @@ namespace CSPushTest
         {
             Console.WriteLine("start");
 
-            //var ip = "127.0.0.1";
-            var ip = "52.231.69.144";
+            var ip = "127.0.0.1";
+            //var ip = "52.231.69.144";
             var port = 24356; // default port
 
             var service = new PushService(ip, port);
@@ -19,7 +19,7 @@ namespace CSPushTest
             Console.WriteLine("connected");
 
             var msg = "";
-            while ((msg = service.WaitForNotifycation()) != null)
+            while ((msg = service.WaitForNotification()) != null)
             {
                 Console.WriteLine(msg);
             }

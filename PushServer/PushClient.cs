@@ -11,28 +11,27 @@ namespace PushServer
     public enum DataType
     {
         Ping = 0xFF,
-        Notifycation = 1
+        Notification = 1
     }
 
     class PushClient
     {
-
         public PushClient(TcpClient tcp)
         {
             this.client = tcp;
             this.ns = tcp.GetStream();
 
-            ip = ((IPEndPoint)tcp.Client.RemoteEndPoint).Address.ToString();
+            Ip = ((IPEndPoint)tcp.Client.RemoteEndPoint).Address.ToString();
+            Connected = true;
         }
 
-        string ip;
+        public string Ip { get; private set; }
+        public int StreamReadTimeout { get => ns.ReadTimeout; set => ns.ReadTimeout = value; }
+        public int StreamWriteTimeout { get => ns.WriteTimeout; set => ns.WriteTimeout = value; }
+        public bool Connected { get; private set; }
+
         TcpClient client;
         NetworkStream ns;
-
-        public void SetStreamWriteTimeout(int value)
-        {
-            ns.WriteTimeout = value;
-        }
 
         public bool Send(DataType pre, byte[] data)
         {
@@ -47,27 +46,15 @@ namespace PushServer
                 if (data != null)
                     sendData = sendData.Concat(data).ToArray();
 
-                if (sendData.Length > 1024)
+                if (sendData.Length > 256)
                 {
-                    byte[] tempArr = new byte[1024];
-                    Array.Copy(sendData, 0, tempArr, 0, 1024);
+                    byte[] tempArr = new byte[256];
+                    Array.Copy(sendData, 0, tempArr, 0, 256);
                     sendData = tempArr;
                 }
 
                 ns.Write(sendData, 0, sendData.Length);
                 return true;
-            }
-            catch (IOException)
-            {
-                return false;
-            }
-        }
-
-        public bool CheckAlive()
-        {
-            try
-            {
-                return Send(DataType.Ping, null);
             }
             catch (Exception ex)
             {
@@ -80,18 +67,51 @@ namespace PushServer
             }
         }
 
-        public string GetIp()
+        public bool CheckAlive()
         {
-            return ip;
+            var success = Send(DataType.Ping, null);
+
+            if (!success)
+            {
+                Connected = false;
+                return false;
+            }
+
+            try
+            {
+                var response = ns.ReadByte();
+                return (response == (int)DataType.Ping);
+            }
+            catch (IOException)
+            {
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+                return false;
+            }
         }
 
         public void Close()
         {
-            ns.Dispose();
-            ns = null;
+            try
+            {
+                if (ns != null)
+                {
+                    ns.Dispose();
+                    ns = null;
+                }
 
-            client.Dispose();
-            client = null;
+                client.Dispose();
+                client = null;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+            }
+
+            Connected = false;
         }
     }
 }

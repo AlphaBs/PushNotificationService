@@ -21,7 +21,7 @@ namespace PushServer
 
         Queue<byte[]> messages;
 
-        public void StartServer(Setting _setting)
+        public void Start(Setting _setting)
         {
             Working = true;
 
@@ -49,14 +49,15 @@ namespace PushServer
                 {
                     var tcpClient = server.AcceptTcpClient();
                     var pushClient = new PushClient(tcpClient);
-                    pushClient.SetStreamWriteTimeout(setting.StreamWriteTimeout);
+                    pushClient.StreamReadTimeout = setting.StreamReadTimeout;
+                    pushClient.StreamWriteTimeout = setting.StreamWriteTimeout;
 
                     lock (ClientList)
                     {
                         ClientList.Add(pushClient);
                     }
 
-                    log(pushClient.GetIp() + " connected");
+                    log(pushClient.Ip + " connected");
                 }
                 catch (SocketException ex)
                 {
@@ -96,9 +97,7 @@ namespace PushServer
                         clientWorker((client) =>
                         {
                             if (!client.CheckAlive())
-                            {
                                 deadClients.Enqueue(client);
-                            }
                         });
 
                         lastPingTime = DateTime.Now.Ticks;
@@ -109,12 +108,15 @@ namespace PushServer
                     {
                         clientWorker((client) =>
                         {
-                            bool success = client.Send(DataType.Notifycation, msg);
+                            if (client.Connected)
+                            {
+                                bool success = client.Send(DataType.Notification, msg);
 
-                            if (success)
-                                log(client.GetIp() + " sent");
-                            else
-                                deadClients.Enqueue(client);
+                                if (success)
+                                    log(client.Ip + " sent");
+                                else
+                                    deadClients.Enqueue(client);
+                            }
                         });
                     }
                 }
@@ -129,8 +131,9 @@ namespace PushServer
                     PushClient deads;
                     if (deadClients.TryDequeue(out deads))
                     {
+                        deads.Close();
                         ClientList.Remove(deads);
-                        log(deads.GetIp() + " disconnected");
+                        log(deads.Ip + " disconnected");
                     }
                 }
 
