@@ -33,14 +33,15 @@ namespace CSPushClient
             {
                 while (true)
                 {
-                    IPEndPoint ip = null;
+                    IPEndPoint ip = new IPEndPoint(IPAddress.Any, 0);
                     var buffer = client.Receive(ref ip);
+                    Console.WriteLine(BitConverter.ToString(buffer));
 
                     var dataType = (DataType)buffer[0];
                     switch (dataType)
                     {
                         case DataType.Ping:
-                            client.Send(buffer, 0);
+                            client.Send(buffer, buffer.Length);
                             break;
 
                         case DataType.Notification:

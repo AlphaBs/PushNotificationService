@@ -13,7 +13,7 @@ namespace CSPushTest
             //var ip = "52.231.69.144";
             var port = 24356; // default port
 
-            var service = new PushService(ip, port);
+            var service = new UdpPushService(ip, port);
             service.Connect();
 
             Console.WriteLine("connected");

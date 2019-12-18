@@ -33,21 +33,22 @@ namespace PushServer
             manageThread = new Thread(manageClient);
             manageThread.Start();
 
-            receiveThread = new Thread(acceptLooper);
+            receiveThread = new Thread(receiveLooper);
             receiveThread.Start();
         }
 
-        // TCP 연결 수락
-        void acceptLooper()
+        // UDP 응답 처리
+        void receiveLooper()
         {
-            var server = new UdpClient(setting.Ip, setting.Port);
+            var server = new UdpClient(setting.Port);
 
             while (Working)
             {
                 try
                 {
-                    IPEndPoint clientAddress = null;
+                    IPEndPoint clientAddress = new IPEndPoint(IPAddress.Any, 0);
                     var data = server.Receive(ref clientAddress);
+                    Console.WriteLine(BitConverter.ToString(data));
 
                     if (clientAddress == null)
                         continue;
@@ -125,7 +126,7 @@ namespace PushServer
                     {
                         var success = true;
 
-                        if (!client.LastPingSuccess && client.LastPingTimeSpan() > setting.PingTimeoutSecond)
+                        if (!client.LastPingSuccess && (client.LastPingTimeSpan() > setting.PingTimeoutSecond))
                             success = false;
                         else if (client.LastPingTimeSpan() > setting.PingIntervalSecond)
                             success = client.Ping();

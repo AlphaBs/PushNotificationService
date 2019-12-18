@@ -14,13 +14,14 @@ namespace PushServer
         {
             Console.WriteLine("Starting Server");
 
-            var p = new PushServer();
-            p.Start(new Setting()
+            var p = new UdpPushServer();
+            var setting = new Setting()
             {
-                Ip = "0.0.0.0"
-            });
+                Ip = "127.0.0.1"
+            };
+            p.Start(setting);
 
-            Console.WriteLine("Started");
+            Console.WriteLine("Started at {0}:{1}", setting.Ip, setting.Port);
             Console.WriteLine("/stop : exit program");
             Console.WriteLine("/list : show connections");
             Console.WriteLine("input message :");
@@ -42,7 +43,7 @@ namespace PushServer
                         break;
 
                     case "/list":
-                        showClients(p);
+                        //showClients(p);
                         break;
 
                     case "/gc": // ONLY TO DEBUG

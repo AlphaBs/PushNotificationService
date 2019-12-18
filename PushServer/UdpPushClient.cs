@@ -17,7 +17,7 @@ namespace PushServer
         }
 
         public IPEndPoint Ip { get; private set; }
-        public bool LastPingSuccess { get; set; }
+        public bool LastPingSuccess { get; set; } = true;
         public long LastPingRequestTime { get; private set; }
 
         public bool Send(DataType pre, byte[] data)
@@ -32,9 +32,16 @@ namespace PushServer
 
         public bool Ping()
         {
-            LastPingRequestTime = DateTime.Now.Ticks;
-            LastPingSuccess = false;
-            return Send(DataType.Ping, null);
+            var s = Send(DataType.Ping, null);
+
+            if (s)
+            {
+                LastPingRequestTime = DateTime.Now.Ticks;
+                LastPingSuccess = false;
+            }
+
+            Console.WriteLine("ping : " + s);
+            return s;
         }
 
         public static bool Send(IPEndPoint address, DataType pre, byte[] data)
@@ -48,6 +55,7 @@ namespace PushServer
                     sendData = sendData.Concat(data).ToArray();
 
                 client.Send(sendData, sendData.Length, address);
+                Console.WriteLine(address.Address + ":" + address.Port);
                 return true;
             }
             catch (Exception ex)
@@ -55,21 +63,6 @@ namespace PushServer
                 Console.WriteLine("sendMessage Exception " + address.ToString() + " : " + ex.ToString());
                 return false;
             }
-        }
-
-        public override bool Equals(object obj)
-        {
-            return Ip.Equals(obj);
-        }
-
-        public override int GetHashCode()
-        {
-            return Ip.GetHashCode();
-        }
-
-        public override string ToString()
-        {
-            return Ip.ToString();
         }
     }
 }
