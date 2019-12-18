@@ -1,67 +1,56 @@
 ﻿using System;
 using System.IO;
+using System.Net;
 using System.Net.Sockets;
 using System.Text;
 
 namespace CSPushClient
 {
-    public enum DataType
+    public class UdpPushService
     {
-        Ping = 0xFF,
-        Hello = 0,
-        Notification = 1,
-        End = 2
-    }
-
-    public class PushService
-    {
-        public PushService(string ip, int port)
+        public UdpPushService(string ip, int port)
         {
             this.ip = ip;
             this.port = port;
         }
 
-
         string ip;
         int port;
 
-        TcpClient client;
-        NetworkStream ns;
+        UdpClient client;
 
         public void Connect()
         {
-            client = new TcpClient();
+            client = new UdpClient();
             client.Connect(ip, port);
-            ns = client.GetStream();
+
+            client.Send(new byte[] { (byte)DataType.Hello }, 1);
         }
 
         public string WaitForNotification()
         {
             try
             {
-                var buffer = new byte[1024];
-                int nbytes;
-
-                while ((nbytes = ns.Read(buffer, 0, buffer.Length)) > 0)
+                while (true)
                 {
+                    IPEndPoint ip = null;
+                    var buffer = client.Receive(ref ip);
+
                     var dataType = (DataType)buffer[0];
                     switch (dataType)
                     {
                         case DataType.Ping:
-                            System.Threading.Thread.Sleep(5000);
-                            ns.Write(buffer, 0, 1);
+                            client.Send(buffer, 0);
                             break;
 
                         case DataType.Notification:
-                            return Encoding.UTF8.GetString(buffer, 1, nbytes - 1);
+                            return Encoding.UTF8.GetString(buffer, 1, buffer.Length - 1);
 
                         default:
                             Array.Clear(buffer, 0, buffer.Length);
                             break;
                     }
                 }
-
-                return null;
             }
             catch (Exception ex)
             {
@@ -75,7 +64,6 @@ namespace CSPushClient
             try
             {
                 client.Close();
-                ns.Dispose();
             }
             catch { }
         }

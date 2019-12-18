@@ -10,8 +10,10 @@ namespace PushServer
 {
     public enum DataType
     {
-        Ping = 0xFF,
-        Notification = 1
+        Ping          = 0xFF,
+        Hello         = 0,
+        Notification  = 1,
+        End           = 2
     }
 
     class PushClient
