@@ -22,26 +22,28 @@ namespace CSPushClient
         public void Connect()
         {
             client = new UdpClient();
-            client.Connect(ip, port);
 
-            client.Send(new byte[] { (byte)DataType.Hello }, 1);
+            client.Send(new byte[] { (byte)DataType.Hello }, 1, ip, port);
         }
 
         public string WaitForNotification()
         {
             try
             {
+                Console.WriteLine("receiver");
+                IPEndPoint ip = new IPEndPoint(IPAddress.Any, 0);
+
                 while (true)
                 {
-                    IPEndPoint ip = new IPEndPoint(IPAddress.Any, 0);
                     var buffer = client.Receive(ref ip);
+                    Console.WriteLine(ip);
                     Console.WriteLine(BitConverter.ToString(buffer));
 
                     var dataType = (DataType)buffer[0];
                     switch (dataType)
                     {
                         case DataType.Ping:
-                            client.Send(buffer, buffer.Length);
+                            client.Send(buffer, buffer.Length, ip);
                             break;
 
                         case DataType.Notification:

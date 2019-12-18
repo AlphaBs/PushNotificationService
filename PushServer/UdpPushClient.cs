@@ -55,6 +55,7 @@ namespace PushServer
                     sendData = sendData.Concat(data).ToArray();
 
                 client.Send(sendData, sendData.Length, address);
+                Console.WriteLine(BitConverter.ToString(sendData));
                 Console.WriteLine(address.Address + ":" + address.Port);
                 return true;
             }
